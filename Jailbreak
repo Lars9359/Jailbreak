@@ -2,13 +2,24 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 
+if not player then
+    warn("LocalPlayer not found. Make sure this is a LocalScript running on client.")
+    return
+end
+
 local playerGui = player:WaitForChild("PlayerGui")
+local character = player.Character or player.CharacterAdded:Wait()
+local hrp = character:WaitForChild("HumanoidRootPart")
 
 local farming = false
 local skyHeight = 500 -- height to teleport if store closed
 
--- Example: Folder containing store models
-local storesFolder = workspace:WaitForChild("Stores")
+-- Wait for Stores folder, adjust this name if different in your game
+local storesFolder = workspace:WaitForChild("Stores", 10)
+if not storesFolder then
+    warn("Stores folder not found in workspace!")
+    return
+end
 
 -- UI Setup (same as before)
 local screenGui = Instance.new("ScreenGui")
@@ -41,10 +52,8 @@ button.TextSize = 20
 button.Text = "Start Auto Farm"
 button.Parent = frame
 
--- Function to check if store is open
 local function isStoreOpen(store)
-    -- Placeholder: customize this depending on your game logic
-    -- Example: check if a BoolValue named "IsOpen" exists and is true
+    -- Customize this based on your game
     local openValue = store:FindFirstChild("IsOpen")
     if openValue and openValue.Value == true then
         return true
@@ -52,51 +61,49 @@ local function isStoreOpen(store)
     return false
 end
 
--- Function to perform robbing action
 local function robStore(store)
-    -- Placeholder: customize based on your game
-    -- Example: teleport to store and fire a remote event
-    local character = player.Character
-    if not character then return end
-    local hrp = character:FindFirstChild("HumanoidRootPart")
+    if not player.Character then return end
+    local hrp = player.Character:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
     
-    -- Teleport to store's primary part or position
-    local targetPos = store.PrimaryPart and store.PrimaryPart.Position or store:GetModelCFrame().p
-    hrp.CFrame = CFrame.new(targetPos) + Vector3.new(0, 5, 0)
+    local targetPos = nil
+    if store.PrimaryPart then
+        targetPos = store.PrimaryPart.Position
+    elseif store:GetModelCFrame() then
+        targetPos = store:GetModelCFrame().p
+    else
+        warn("Cannot find position for store: "..store.Name)
+        return
+    end
     
-    wait(1) -- wait a bit
-
-    -- Example robbing: fire a remote event (customize with actual remote event)
-    -- local remote = game:GetService("ReplicatedStorage"):WaitForChild("RobRemote")
-    -- remote:FireServer(store)
-
-    print("Robbed store: "..store.Name)
+    print("Teleporting to store: "..store.Name)
+    hrp.CFrame = CFrame.new(targetPos) + Vector3.new(0, 5, 0)
+    wait(1)
+    
+    -- Insert your robbery logic here.
+    -- For example, fire a remote or touch a part.
+    print("Robbing store: "..store.Name)
 end
 
--- Main farming loop
 local function farm()
-    local character = player.Character
-    if not character then return end
-    local hrp = character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-
     for _, store in pairs(storesFolder:GetChildren()) do
         if store:IsA("Model") then
+            print("Checking store: "..store.Name)
             if isStoreOpen(store) then
                 robStore(store)
             else
-                -- Teleport high in the sky if store is closed
-                hrp.CFrame = CFrame.new(hrp.Position.X, skyHeight, hrp.Position.Z)
-                print("Store closed: "..store.Name..", teleported to sky")
-                wait(2) -- wait a bit in the sky
+                print("Store closed: "..store.Name..", teleporting to sky")
+                local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    hrp.CFrame = CFrame.new(hrp.Position.X, skyHeight, hrp.Position.Z)
+                end
+                wait(2)
             end
-            wait(1) -- wait before next store
+            wait(1)
         end
     end
 end
 
--- Toggle farming on button click
 button.MouseButton1Click:Connect(function()
     farming = not farming
     if farming then
@@ -111,3 +118,5 @@ button.MouseButton1Click:Connect(function()
         button.Text = "Start Auto Farm"
     end
 end)
+
+print("Auto farm script loaded successfully!")
