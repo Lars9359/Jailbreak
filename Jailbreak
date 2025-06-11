@@ -1,0 +1,26 @@
+local url = 'https://raw.githubusercontent.com/BlitzIsKing/UniversalFarm/main/Loader/Regular'
+
+local success, result = pcall(function()
+    return game:HttpGet(url)
+end)
+
+if success and result then
+    local func, err = loadstring(result)
+    if func then
+        func()
+        wait(1) -- give the script time to create UI
+        local playerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+        -- Assuming the UI is named 'UniversalFarm' and has a TextLabel named 'Title'
+        local ui = playerGui:FindFirstChild("UniversalFarm")
+        if ui then
+            local titleLabel = ui:FindFirstChild("Title", true) -- search recursively
+            if titleLabel and titleLabel:IsA("TextLabel") then
+                titleLabel.Text = "k0xx.exe"
+            end
+        end
+    else
+        warn("Failed to load script: " .. tostring(err))
+    end
+else
+    warn("Failed to fetch script from URL.")
+end
