@@ -1,27 +1,14 @@
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
-
-if not player then
-    warn("LocalPlayer not found. Make sure this is a LocalScript running on client.")
-    return
-end
-
 local playerGui = player:WaitForChild("PlayerGui")
-local character = player.Character or player.CharacterAdded:Wait()
-local hrp = character:WaitForChild("HumanoidRootPart")
 
 local farming = false
-local skyHeight = 500 -- height to teleport if store closed
+local skyHeight = 500
 
--- Wait for Stores folder, adjust this name if different in your game
-local storesFolder = workspace:WaitForChild("Stores", 10)
-if not storesFolder then
-    warn("Stores folder not found in workspace!")
-    return
-end
+-- Keywords to identify stores
+local storeKeywords = {"Bank", "Store", "Shop"}
 
--- UI Setup (same as before)
+-- Create GUI
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "k0xxUI"
 screenGui.Parent = playerGui
@@ -52,8 +39,24 @@ button.TextSize = 20
 button.Text = "Start Auto Farm"
 button.Parent = frame
 
+-- Functions
+
+local function getStores()
+    local stores = {}
+    for _, obj in pairs(workspace:GetChildren()) do
+        if obj:IsA("Model") then
+            for _, keyword in pairs(storeKeywords) do
+                if string.find(obj.Name, keyword) then
+                    table.insert(stores, obj)
+                    break
+                end
+            end
+        end
+    end
+    return stores
+end
+
 local function isStoreOpen(store)
-    -- Customize this based on your game
     local openValue = store:FindFirstChild("IsOpen")
     if openValue and openValue.Value == true then
         return true
@@ -62,45 +65,48 @@ local function isStoreOpen(store)
 end
 
 local function robStore(store)
-    if not player.Character then return end
-    local hrp = player.Character:FindFirstChild("HumanoidRootPart")
+    local character = player.Character
+    if not character then return end
+    local hrp = character:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
-    
+
     local targetPos = nil
     if store.PrimaryPart then
         targetPos = store.PrimaryPart.Position
-    elseif store:GetModelCFrame() then
+    elseif store:GetModelCFrame then
         targetPos = store:GetModelCFrame().p
     else
-        warn("Cannot find position for store: "..store.Name)
+        warn("No position found for store: "..store.Name)
         return
     end
-    
-    print("Teleporting to store: "..store.Name)
+
     hrp.CFrame = CFrame.new(targetPos) + Vector3.new(0, 5, 0)
     wait(1)
-    
-    -- Insert your robbery logic here.
-    -- For example, fire a remote or touch a part.
-    print("Robbing store: "..store.Name)
+
+    print("Robbed store: "..store.Name)
+    -- Insert your rob action here (e.g., fire remotes, click parts)
 end
 
 local function farm()
-    for _, store in pairs(storesFolder:GetChildren()) do
-        if store:IsA("Model") then
+    while farming do
+        local stores = getStores()
+        for _, store in pairs(stores) do
+            if not farming then break end -- stop immediately if toggled off
+
             print("Checking store: "..store.Name)
             if isStoreOpen(store) then
                 robStore(store)
             else
-                print("Store closed: "..store.Name..", teleporting to sky")
                 local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
                 if hrp then
                     hrp.CFrame = CFrame.new(hrp.Position.X, skyHeight, hrp.Position.Z)
                 end
+                print("Store closed: "..store.Name..", teleported to sky")
                 wait(2)
             end
             wait(1)
         end
+        wait(1)
     end
 end
 
@@ -108,15 +114,10 @@ button.MouseButton1Click:Connect(function()
     farming = not farming
     if farming then
         button.Text = "Stop Auto Farm"
-        spawn(function()
-            while farming do
-                farm()
-                wait(1)
-            end
-        end)
+        spawn(farm)
     else
         button.Text = "Start Auto Farm"
     end
 end)
 
-print("Auto farm script loaded successfully!")
+print("k0xx.exe Auto Farm loaded!")
