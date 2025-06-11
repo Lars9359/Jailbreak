@@ -1,26 +1,45 @@
-local url = 'https://raw.githubusercontent.com/BlitzIsKing/UniversalFarm/main/Loader/Regular'
+-- Create a simple UI with title "k0xx.exe"
 
-local success, result = pcall(function()
-    return game:HttpGet(url)
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Create ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "k0xxUI"
+screenGui.Parent = playerGui
+
+-- Create main Frame
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 300, 0, 150)
+frame.Position = UDim2.new(0.5, -150, 0.5, -75)
+frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+frame.BorderSizePixel = 0
+frame.Parent = screenGui
+
+-- Create Title Label
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 50)
+title.BackgroundTransparency = 1
+title.Text = "k0xx.exe"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 30
+title.Parent = frame
+
+-- Create a sample button (for future farming feature)
+local button = Instance.new("TextButton")
+button.Size = UDim2.new(0.8, 0, 0, 40)
+button.Position = UDim2.new(0.1, 0, 0, 70)
+button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+button.TextColor3 = Color3.fromRGB(255, 255, 255)
+button.Font = Enum.Font.Gotham
+button.TextSize = 20
+button.Text = "Start Farming"
+button.Parent = frame
+
+-- Example button click action
+button.MouseButton1Click:Connect(function()
+    print("Farming started!")
+    -- You can add your farming logic here
 end)
-
-if success and result then
-    local func, err = loadstring(result)
-    if func then
-        func()
-        wait(1) -- give the script time to create UI
-        local playerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
-        -- Assuming the UI is named 'UniversalFarm' and has a TextLabel named 'Title'
-        local ui = playerGui:FindFirstChild("UniversalFarm")
-        if ui then
-            local titleLabel = ui:FindFirstChild("Title", true) -- search recursively
-            if titleLabel and titleLabel:IsA("TextLabel") then
-                titleLabel.Text = "k0xx.exe"
-            end
-        end
-    else
-        warn("Failed to load script: " .. tostring(err))
-    end
-else
-    warn("Failed to fetch script from URL.")
-end
