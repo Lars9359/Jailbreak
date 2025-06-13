@@ -1,123 +1,50 @@
-local Players = game:GetService("Players")
-local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
+-- Utilities
+local HttpGet = game.HttpGet or function(t,u) return game:HttpGet(u) end
 
-local farming = false
-local skyHeight = 500
-
--- Keywords to identify stores
-local storeKeywords = {"Bank", "Store", "Shop"}
-
--- Create GUI
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "k0xxUI"
-screenGui.Parent = playerGui
-
-local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 300, 0, 150)
-frame.Position = UDim2.new(0.5, -150, 0.5, -75)
-frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-frame.BorderSizePixel = 0
-frame.Parent = screenGui
-
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 50)
-title.BackgroundTransparency = 1
-title.Text = "k0xx.exe"
-title.TextColor3 = Color3.fromRGB(255, 255, 255)
-title.Font = Enum.Font.GothamBold
-title.TextSize = 30
-title.Parent = frame
-
-local button = Instance.new("TextButton")
-button.Size = UDim2.new(0.8, 0, 0, 40)
-button.Position = UDim2.new(0.1, 0, 0, 70)
-button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-button.TextColor3 = Color3.fromRGB(255, 255, 255)
-button.Font = Enum.Font.Gotham
-button.TextSize = 20
-button.Text = "Start Auto Farm"
-button.Parent = frame
-
--- Functions
-
-local function getStores()
-    local stores = {}
-    for _, obj in pairs(workspace:GetChildren()) do
-        if obj:IsA("Model") then
-            for _, keyword in pairs(storeKeywords) do
-                if string.find(obj.Name, keyword) then
-                    table.insert(stores, obj)
-                    break
-                end
-            end
-        end
-    end
-    return stores
-end
-
-local function isStoreOpen(store)
-    local openValue = store:FindFirstChild("IsOpen")
-    if openValue and openValue.Value == true then
-        return true
-    end
-    return false
-end
-
-local function robStore(store)
-    local character = player.Character
-    if not character then return end
-    local hrp = character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-
-    local targetPos = nil
-    if store.PrimaryPart then
-        targetPos = store.PrimaryPart.Position
-    elseif store:GetModelCFrame then
-        targetPos = store:GetModelCFrame().p
+-- Fetch and load modules
+local modules = {
+    autoFarm = HttpGet(game, 'https://yourcdn.com/autoFarm.lua'),
+    combat = HttpGet(game, 'https://yourcdn.com/combat.lua'),
+    serverHop = HttpGet(game, 'https://yourcdn.com/serverHop.lua'),
+}
+-- Run each module
+for name, code in pairs(modules) do
+    local ok, func = pcall(loadstring, code)
+    if ok and type(func) == 'function' then
+        func()
     else
-        warn("No position found for store: "..store.Name)
-        return
-    end
-
-    hrp.CFrame = CFrame.new(targetPos) + Vector3.new(0, 5, 0)
-    wait(1)
-
-    print("Robbed store: "..store.Name)
-    -- Insert your rob action here (e.g., fire remotes, click parts)
-end
-
-local function farm()
-    while farming do
-        local stores = getStores()
-        for _, store in pairs(stores) do
-            if not farming then break end -- stop immediately if toggled off
-
-            print("Checking store: "..store.Name)
-            if isStoreOpen(store) then
-                robStore(store)
-            else
-                local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-                if hrp then
-                    hrp.CFrame = CFrame.new(hrp.Position.X, skyHeight, hrp.Position.Z)
-                end
-                print("Store closed: "..store.Name..", teleported to sky")
-                wait(2)
-            end
-            wait(1)
-        end
-        wait(1)
+        warn("Failed loading:", name, func)
     end
 end
 
-button.MouseButton1Click:Connect(function()
-    farming = not farming
-    if farming then
-        button.Text = "Stop Auto Farm"
-        spawn(farm)
-    else
-        button.Text = "Start Auto Farm"
-    end
-end)
+-- Basic GUI (example, you could use Rayfield or another lib)
+local player = game.Players.LocalPlayer
+local screenGui = Instance.new("ScreenGui", player.PlayerGui)
+local frame = Instance.new("Frame", screenGui)
+frame.Size = UDim2.new(0,200,0,150)
+frame.Position = UDim2.new(0,10,0,10)
 
-print("k0xx.exe Auto Farm loaded!")
+local function addToggle(text, callback, yOffset)
+    local btn = Instance.new("TextButton", frame)
+    btn.Size = UDim2.new(1,0,0,30)
+    btn.Position = UDim2.new(0,0,0, yOffset)
+    btn.Text = text
+    local toggled = false
+    btn.MouseButton1Click:Connect(function()
+        toggled = not toggled
+        callback(toggled)
+        btn.BackgroundColor3 = toggled and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
+    end)
+end
+
+-- Add toggles for each module
+addToggle("Auto‑Farm", function(on)
+    -- assume autoFarm module defines toggleAutoFarm(bool)
+    if modules.autoFarm then modules.autoFarm.toggle(on) end
+end, 0)
+addToggle("Combat Assist", function(on)
+    if modules.combat then modules.combat.toggle(on) end
+end, 40)
+addToggle("Server Hop", function(on)
+    if modules.serverHop then modules.serverHop.toggle(on) end
+end, 80)
